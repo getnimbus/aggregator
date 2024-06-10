@@ -31,7 +31,7 @@ func NewClient(timeout int64, proxy string) *Client {
 		proxy:   proxy,
 	}
 	if proxy != "" {
-		if strings.HasPrefix(proxy, "socks5://") {
+		if strings.HasPrefix(proxy, "socks5://") || strings.HasPrefix(proxy, "socks5h://") {
 			cli.client.Dial = fasthttpproxy.FasthttpSocksDialer(proxy)
 		} else {
 			cli.client.Dial = fasthttpproxy.FasthttpHTTPDialer(proxy)

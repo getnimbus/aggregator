@@ -12,13 +12,13 @@ import (
 	"github.com/valyala/fasthttp"
 
 	"aggregator/internal/aggregator"
+	"aggregator/internal/env"
 	"aggregator/internal/log"
 )
 
 var (
 	logger            = log.Module("config")
 	locker            = sync.Mutex{}
-	defaultConfigUrl  = "https://cfg.rpchub.io/agg/default.json"
 	defaultPhishingDb = "https://cfg.rpchub.io/agg/scam-addresses.json"
 
 	_Config = &Config{
@@ -91,7 +91,7 @@ func LoadDefault() *Config {
 
 	retries := 0
 	for {
-		statusCode, data, err := (&fasthttp.Client{}).GetTimeout(nil, defaultConfigUrl, time.Second*5)
+		statusCode, data, err := (&fasthttp.Client{}).GetTimeout(nil, env.Config.DefaultConfigUrl, time.Second*30)
 		if err == nil && statusCode == 200 {
 			err = json.Unmarshal(data, &cfg)
 			if err == nil {

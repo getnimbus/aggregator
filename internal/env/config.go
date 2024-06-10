@@ -21,10 +21,10 @@ func init() {
 // Config stores all configuration of the application.
 // The values are read by viper from a config file or environment variable.
 type config struct {
-	// constant
-	Env    string `mapstructure:"ENV" default:"dev"`
-	Debug  string `mapstructure:"DEBUG" default:"no"`
-	ApiKey string `mapstructure:"API_KEY" default:"-"`
+	Env              string `mapstructure:"ENV" default:"dev"`
+	Debug            string `mapstructure:"DEBUG" default:"no"`
+	ApiKey           string `mapstructure:"API_KEY" default:"-"`
+	DefaultConfigUrl string `mapstructure:"DEFAULT_CONFIG_URL" default:"https://cfg.rpchub.io/agg/default.json"`
 }
 
 func (c *config) IsLocal() bool {
