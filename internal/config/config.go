@@ -3,7 +3,6 @@ package config
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"sort"
 	"sync"
 	"time"
@@ -14,7 +13,6 @@ import (
 
 	"aggregator/internal/aggregator"
 	"aggregator/internal/log"
-	"aggregator/internal/notify"
 )
 
 var (
@@ -110,8 +108,7 @@ func LoadDefault() *Config {
 			logger.Error("Load default config failed", "statusCode", statusCode, "error", errStr, "retries", retries)
 
 			if retries >= 5 {
-				notify.SendError("Load default Config failed", fmt.Sprintf("Status Code: %d\nError: %s", statusCode, errStr))
-				logger.Warn("Load default config failed, See the documents for more details [https://docs.rpchub.io/]")
+				logger.Warn("Load default config failed, See the documents for more details [https://docs.rpchub.io/]", errStr)
 				break
 			} else {
 				time.Sleep(time.Second * 3)
@@ -128,7 +125,6 @@ func Load() error {
 	db, err := leveldb.OpenFile("data/db", nil)
 	if err != nil {
 		logger.Error("Load Config failed", "error", err.Error())
-		notify.SendError("Load Config failed", err.Error())
 		return err
 	}
 	defer db.Close()
@@ -136,7 +132,6 @@ func Load() error {
 	data, err := db.Get(aggregator.KeyDbConfig, nil)
 	if err != nil && !errors.Is(err, leveldbErrors.ErrNotFound) {
 		logger.Error("Load Config failed", "error", err.Error())
-		notify.SendError("Load Config failed", err.Error())
 		return err
 	}
 
@@ -145,7 +140,6 @@ func Load() error {
 		err = json.Unmarshal(data, &cfgLocal)
 		if err != nil {
 			logger.Error("Load Config failed", "error", err.Error())
-			notify.SendError("Load Config failed", err.Error())
 			return err
 		}
 
@@ -184,7 +178,6 @@ func Save() error {
 	db, err := leveldb.OpenFile("data/db", nil)
 	if err != nil {
 		logger.Error("Save Config failed", "error", err.Error())
-		notify.SendError("Save Config failed", err.Error())
 		return err
 	}
 	defer db.Close()
@@ -192,14 +185,12 @@ func Save() error {
 	data, err := json.Marshal(Default())
 	if err != nil {
 		logger.Error("Save Config failed", "error", err.Error())
-		notify.SendError("Save Config failed", err.Error())
 		return err
 	}
 
 	err = db.Put(aggregator.KeyDbConfig, data, nil)
 	if err != nil {
 		logger.Error("Save Config failed", "error", err.Error())
-		notify.SendError("Save Config failed", err.Error())
 		return err
 	}
 

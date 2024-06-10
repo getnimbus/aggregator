@@ -6,7 +6,6 @@ import (
 	"aggregator/internal/config"
 	"aggregator/internal/log"
 	"aggregator/internal/middleware"
-	"aggregator/internal/notify"
 	"aggregator/internal/rpc"
 )
 
@@ -77,7 +76,6 @@ func NewServer() error {
 
 	err = s.ListenAndServe(addr)
 	if err != nil {
-		notify.SendError("Error start aggregator server.", err.Error())
 		return err
 	}
 	return nil

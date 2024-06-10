@@ -10,7 +10,6 @@ import (
 	"aggregator/internal/config"
 	"aggregator/internal/env"
 	"aggregator/internal/loadbalance"
-	"aggregator/internal/notify"
 )
 
 func rootHandler(ctx *fasthttp.RequestCtx) {
@@ -101,8 +100,8 @@ func NewManageServer() error {
 				return
 			}
 
-			auth := ctx.Request.Header.Peek("Authorization")
-			if string(auth) == env.Config.ApiKey {
+			auth := ctx.Request.Header.Peek("X-Api-Key")
+			if env.Config.Env == "local" || string(auth) == env.Config.ApiKey {
 				r.Handler(ctx)
 				return
 			}
@@ -111,7 +110,6 @@ func NewManageServer() error {
 	}
 	err := server.ListenAndServe(addr)
 	if err != nil {
-		notify.SendError("Error start manage server.", err.Error())
 		return err
 	}
 	return nil

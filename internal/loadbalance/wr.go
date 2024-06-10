@@ -1,11 +1,13 @@
 package loadbalance
 
 import (
+	"context"
+	"fmt"
 	"math/rand"
 	"sync"
 
 	"aggregator/internal/aggregator"
-	"aggregator/internal/notify"
+	"aggregator/pkg/alert"
 )
 
 // WrSelector weighted-random selector
@@ -28,7 +30,7 @@ func (s *WrSelector) SetNodes(nodes []aggregator.Node) {
 				sumWeight += node.Weight
 				nodesSelected = append(nodesSelected, node)
 			} else {
-				notify.SendError("load balance: node is not selected", node.Name, node.Endpoint)
+				alert.AlertDiscord(context.Background(), fmt.Sprintf("load balance: node is not selected %s %s", node.Name, node.Endpoint))
 			}
 		} else {
 			logger.Warn("Node is disabled", "node", node.Name, "endpoint", node.Endpoint)

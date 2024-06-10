@@ -2,6 +2,7 @@ package plugins
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -13,9 +14,9 @@ import (
 	"aggregator/internal/config"
 	"aggregator/internal/log"
 	"aggregator/internal/middleware"
-	"aggregator/internal/notify"
 	"aggregator/internal/rpc"
 	"aggregator/internal/safety"
+	"aggregator/pkg/alert"
 	"aggregator/pkg/utils"
 )
 
@@ -71,6 +72,7 @@ func (m *SafetyMiddleware) SetNext(middleware middleware.Middleware) {
 }
 
 func (m *SafetyMiddleware) OnRequest(session *rpc.Session) error {
+	ctx := session.RequestCtx.(*fasthttp.RequestCtx)
 	if session.IsWriteRpcMethod {
 		params := session.RpcParams()
 		//logger.Debug("new tx", "method", session.RpcMethod())
@@ -88,7 +90,7 @@ func (m *SafetyMiddleware) OnRequest(session *rpc.Session) error {
 			tx, err := utils.DecodeTx(rawTx)
 			if err != nil {
 				logger.Warn("Unable to decode tx")
-				notify.SendNotice("Unable to decode tx")
+				alert.AlertDiscord(ctx, "Unable to decode tx")
 			} else {
 				targetAddress = tx.To().Hex()
 				//phishing, pha := m.isPhishingAddress(receiver)
@@ -115,7 +117,7 @@ func (m *SafetyMiddleware) OnRequest(session *rpc.Session) error {
 				if len(pha.Reporter) > 0 {
 					reporter = "Reporter: " + pha.Reporter
 				}
-				notify.Send("Option denied - scam address", m.shortAddress(targetAddress), reporter)
+				alert.AlertDiscord(ctx, fmt.Sprintf("Option denied - scam address %s %s", m.shortAddress(targetAddress), reporter))
 				logger.Error("Option denied", "target", targetAddress, "Reason", pha.Description, "reporter", pha.Reporter)
 				return aggregator.ErrDenyRequest
 			}

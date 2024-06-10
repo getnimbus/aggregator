@@ -1,31 +1,38 @@
 package plugins
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
+	cmap "github.com/orcaman/concurrent-map/v2"
 	"github.com/valyala/fasthttp"
 
 	"aggregator/internal/client"
 	"aggregator/internal/log"
 	"aggregator/internal/middleware"
 	"aggregator/internal/rpc"
+	"aggregator/pkg/alert"
 )
 
 type HttpProxyMiddleware struct {
-	nextMiddleware  middleware.Middleware
-	enabled         bool
-	client          *client.Client
-	clientCreatedAt time.Time
-	clientRenew     time.Duration
-	mu              sync.Mutex
+	nextMiddleware   middleware.Middleware
+	enabled          bool
+	client           *client.Client
+	clientCreatedAt  time.Time
+	clientRenew      time.Duration
+	mu               sync.Mutex
+	disableEndpoints cmap.ConcurrentMap[string, int64]
 }
 
 func NewHttpProxyMiddleware() *HttpProxyMiddleware {
+	disableEndpoints := cmap.New[int64]()
+
 	return &HttpProxyMiddleware{
-		enabled:     true,
-		clientRenew: time.Second * 60,
-		mu:          sync.Mutex{},
+		enabled:          true,
+		clientRenew:      time.Second * 60,
+		mu:               sync.Mutex{},
+		disableEndpoints: disableEndpoints,
 	}
 }
 
@@ -53,6 +60,7 @@ func (m *HttpProxyMiddleware) OnProcess(session *rpc.Session) error {
 	if ctx, ok := session.RequestCtx.(*fasthttp.RequestCtx); ok {
 		logger.Debug("relay rpc -> "+session.RpcMethod(), "sid", session.SId(), "node", session.NodeName, "isTx", session.IsWriteRpcMethod, "tries", session.Tries)
 		err := m.GetClient(session).Do(&ctx.Request, &ctx.Response)
+
 		//if ctx, ok := session.RequestCtx.(*fasthttp.RequestCtx); ok {
 		//	ctx.Response.Header.Set("Access-Control-Max-Age", "86400")
 		//	ctx.Response.Header.Set("Access-Control-Allow-Origin", "*")
@@ -74,7 +82,13 @@ func (m *HttpProxyMiddleware) OnProcess(session *rpc.Session) error {
 		}
 
 		if shouldDisableEndpoint {
-			//todo disable endpoint
+			// TODO: disable endpoint
+			now := time.Now().UnixMilli()
+			lastTime, ok := m.disableEndpoints.Get(session.NodeName)
+			if !ok || now >= lastTime+60*60*1000 { // last alert time is more than 1 hour ago then re-alert
+				m.disableEndpoints.Set(session.NodeName, now)
+				alert.AlertDiscord(ctx, fmt.Sprintf("disable endpoint %s err %v", session.NodeName, err))
+			}
 		}
 
 		return err
