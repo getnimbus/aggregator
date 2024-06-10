@@ -1,35 +1,42 @@
-# Stage 1: Build the Go application
-FROM golang:1.22-bullseye AS builder
+FROM golang:1.22.0-bookworm as builder
 
-# Set the working directory
-WORKDIR /app
+RUN apt update && apt install curl unzip -y
 
-# Copy the Go Modules manifests
+ENV GOPATH=/go
+
+WORKDIR /src
+
+# Copy go mod and sum files
 COPY go.mod go.sum ./
 
-# Download Go modules
-RUN go mod download
+# Download all dependencies. Dependencies will be cached if the go.mod and go.sum files are not changed
+RUN go mod download || true
 
-# Copy the source code
+# Copy the source from the current directory to the Working Directory inside the container
 COPY . .
 
-# Build the application
-RUN go build -o /app/aggregator ./cmd/aggregator
+# Build docker
+RUN make static
 
-# Stage 2: Create a minimal runtime image
-FROM golang:1.22-bullseye
+######## Start a new stage from scratch #######
+FROM alpine:3.13 as production
 
-# Set the working directory
-WORKDIR /app
+RUN apk --no-cache add ca-certificates tzdata htop tini bash curl
 
-# Copy the built binary from the builder stage
-COPY --from=builder /app/aggregator /app/aggregator
+RUN rm -rf /tmp/*
 
-# Make the binary executable
-RUN chmod +x ./aggregator
+# Change timezone to UTC/GMT
+ENV TZ=UTC
+RUN cp /usr/share/zoneinfo/UTC /etc/localtime
 
-# Expose the port that the application listens on (if applicable)
+# Copy the Pre-built binary file from the previous stage
+COPY --from=builder /src/out /bin/
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=30s --retries=5 --start-period=30s CMD curl -f http://localhost:8012/status || exit 1
+
+# Expose ports
 EXPOSE 8012
 
-# Command to run the application
-CMD ["./aggregator/aggregator"]
+# Command to run the executable
+CMD ["tini", "--", "/bin/aggregator"]

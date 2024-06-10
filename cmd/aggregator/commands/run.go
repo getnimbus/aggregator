@@ -1,6 +1,8 @@
 package commands
 
 import (
+	"aggregator/internal/conf"
+	"fmt"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/sync/errgroup"
 
@@ -37,6 +39,10 @@ func RunCommand() *cli.Command {
 			return nil
 		},
 		Action: func(context *cli.Context) error {
+			if err := conf.LoadConfig("."); err != nil {
+				panic(fmt.Errorf("cannot load config: %v", err))
+			}
+
 			wg := errgroup.Group{}
 			wg.Go(func() error {
 				return server.NewManageServer()
