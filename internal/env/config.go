@@ -1,4 +1,4 @@
-package conf
+package env
 
 import (
 	"reflect"
@@ -22,8 +22,9 @@ func init() {
 // The values are read by viper from a config file or environment variable.
 type config struct {
 	// constant
-	Env   string `mapstructure:"ENV" default:"dev"`
-	Debug string `mapstructure:"DEBUG" default:"no"`
+	Env    string `mapstructure:"ENV" default:"dev"`
+	Debug  string `mapstructure:"DEBUG" default:"no"`
+	ApiKey string `mapstructure:"API_KEY" default:"-"`
 }
 
 func (c *config) IsLocal() bool {

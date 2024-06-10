@@ -24,7 +24,6 @@ var (
 	defaultPhishingDb = "https://cfg.rpchub.io/agg/scam-addresses.json"
 
 	_Config = &Config{
-		Password:                 "123456",
 		RequestTimeout:           30,
 		MaxRetries:               3,
 		PhishingDb:               []string{defaultPhishingDb},
@@ -33,14 +32,12 @@ var (
 )
 
 type Config struct {
-	Password                 string                       `json:"password,omitempty"`
 	Proxy                    string                       `json:"proxy,omitempty"`
 	RequestTimeout           int64                        `json:"request_timeout,omitempty"`
 	MaxRetries               int                          `json:"max_retries,omitempty"`
 	Nodes                    map[string][]aggregator.Node `json:"nodes"`
 	PhishingDb               []string                     `json:"phishing_db"`
 	PhishingDbUpdateInterval int64                        `json:"phishing_db_update_interval"`
-	Mrt                      int64                        `json:"mrt"`
 	AuthorityDB              []AuthorityDB                `json:"authority_db"`
 }
 
