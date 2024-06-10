@@ -95,7 +95,7 @@ func LoadDefault() *Config {
 		if err == nil && statusCode == 200 {
 			err = json.Unmarshal(data, &cfg)
 			if err == nil {
-				logger.Info("Load default config success")
+				logger.Info("Load default config success from url", env.Config.DefaultConfigUrl)
 				break
 			}
 		}

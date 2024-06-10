@@ -2,9 +2,12 @@ package commands
 
 import (
 	"errors"
+	"fmt"
 	"os"
 
 	"github.com/urfave/cli/v2"
+
+	"aggregator/internal/env"
 )
 
 func RootApp() *cli.App {
@@ -47,7 +50,10 @@ func runCommand(app *cli.Context, cmd string, args ...string) error {
 
 func initConfig(cli *cli.Context) error {
 	//viper.SetConfigFile(cli.String(config.FlagConfigFile.Name))
-
 	//return config.LoadConfig()
+
+	if err := env.LoadConfig("."); err != nil {
+		panic(fmt.Errorf("cannot load config: %v", err))
+	}
 	return nil
 }

@@ -12,7 +12,6 @@ func InitCommand() *cli.Command {
 			return nil
 		},
 		Action: func(cli *cli.Context) error {
-
 			return nil
 		},
 	}
