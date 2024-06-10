@@ -1,5 +1,5 @@
 # Stage 1: Build the Go application
-FROM golang:1.19 AS builder
+FROM golang:1.22-bullseye AS builder
 
 # Set the working directory
 WORKDIR /app
@@ -17,7 +17,7 @@ COPY . .
 RUN go build -o /app/aggregator ./cmd/aggregator
 
 # Stage 2: Create a minimal runtime image
-FROM golang:1.19
+FROM golang:1.22-bullseye
 
 # Set the working directory
 WORKDIR /app

@@ -1,6 +1,8 @@
 package proxy
 
-import "github.com/valyala/fasthttp"
+import (
+	"github.com/valyala/fasthttp"
+)
 
 type HttpProxy struct {
 	clients []*fasthttp.Client

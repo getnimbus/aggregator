@@ -1,9 +1,10 @@
 package plugins
 
 import (
-	"github.com/BlockPILabs/aggregator/middleware"
-	"github.com/BlockPILabs/aggregator/rpc"
 	"github.com/valyala/fasthttp"
+
+	"aggregator/internal/middleware"
+	"aggregator/internal/rpc"
 )
 
 type CorsMiddleware struct {

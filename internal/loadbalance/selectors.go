@@ -1,10 +1,11 @@
 package loadbalance
 
 import (
-	"github.com/BlockPILabs/aggregator/aggregator"
-	"github.com/BlockPILabs/aggregator/config"
-	"github.com/BlockPILabs/aggregator/log"
 	"sync"
+
+	"aggregator/internal/aggregator"
+	"aggregator/internal/config"
+	"aggregator/internal/log"
 )
 
 var (

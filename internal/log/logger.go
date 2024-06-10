@@ -3,8 +3,9 @@ package log
 import (
 	"context"
 	"fmt"
-	"github.com/inconshreveable/log15"
 	"sync"
+
+	"github.com/inconshreveable/log15"
 )
 
 type Logger interface {

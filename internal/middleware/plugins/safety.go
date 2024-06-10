@@ -2,19 +2,21 @@ package plugins
 
 import (
 	"encoding/json"
-	"github.com/BlockPILabs/aggregator/aggregator"
-	"github.com/BlockPILabs/aggregator/client"
-	"github.com/BlockPILabs/aggregator/config"
-	"github.com/BlockPILabs/aggregator/log"
-	"github.com/BlockPILabs/aggregator/middleware"
-	"github.com/BlockPILabs/aggregator/notify"
-	"github.com/BlockPILabs/aggregator/rpc"
-	"github.com/BlockPILabs/aggregator/safety"
-	"github.com/BlockPILabs/aggregator/utils"
-	"github.com/valyala/fasthttp"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/valyala/fasthttp"
+
+	"aggregator/internal/aggregator"
+	"aggregator/internal/client"
+	"aggregator/internal/config"
+	"aggregator/internal/log"
+	"aggregator/internal/middleware"
+	"aggregator/internal/notify"
+	"aggregator/internal/rpc"
+	"aggregator/internal/safety"
+	"aggregator/pkg/utils"
 )
 
 var (

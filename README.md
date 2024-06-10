@@ -10,7 +10,7 @@ Configurations are stored and utilized locally to best protect your privacy.
 
 
 ## Installation
-Download the last release [here](https://github.com/BlockPILabs/aggregator/releases)
+Download the last release [here](https://aggregator/internal/releases)
 
 ## Building from source
 ```shell

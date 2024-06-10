@@ -1,8 +1,9 @@
 package notify
 
 import (
-	gonotify "github.com/martinlindhe/notify"
 	"strings"
+
+	gonotify "github.com/martinlindhe/notify"
 )
 
 func Send(title string, lines ...string) {

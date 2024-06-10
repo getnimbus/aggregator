@@ -2,12 +2,14 @@ package rpc
 
 import (
 	"fmt"
-	"github.com/BlockPILabs/aggregator/aggregator"
-	"github.com/BlockPILabs/aggregator/config"
-	"github.com/valyala/fasthttp"
 	"strings"
 	"sync"
 	"sync/atomic"
+
+	"github.com/valyala/fasthttp"
+
+	"aggregator/internal/aggregator"
+	"aggregator/internal/config"
 )
 
 var _id int64 = 0

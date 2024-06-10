@@ -3,16 +3,17 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/BlockPILabs/aggregator/cmd/aggregator/commands"
-	"github.com/BlockPILabs/aggregator/version"
 	"os"
 	"time"
 
 	"github.com/gogf/gf/v2/os/gfile"
+
+	"aggregator/cmd/aggregator/commands"
+	"aggregator/internal/entity"
 )
 
 func main() {
-	println(version.Version)
+	println(entity.Version)
 
 	time.Local = time.UTC
 	initPath()

@@ -1,13 +1,14 @@
 package commands
 
 import (
-	"github.com/BlockPILabs/aggregator/config"
-	"github.com/BlockPILabs/aggregator/loadbalance"
-	"github.com/BlockPILabs/aggregator/middleware"
-	"github.com/BlockPILabs/aggregator/middleware/plugins"
-	"github.com/BlockPILabs/aggregator/server"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/sync/errgroup"
+
+	"aggregator/internal/config"
+	"aggregator/internal/loadbalance"
+	"aggregator/internal/middleware"
+	"aggregator/internal/middleware/plugins"
+	"aggregator/internal/server"
 )
 
 func RunCommand() *cli.Command {

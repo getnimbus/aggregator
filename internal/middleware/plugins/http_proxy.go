@@ -1,13 +1,15 @@
 package plugins
 
 import (
-	"github.com/BlockPILabs/aggregator/client"
-	"github.com/BlockPILabs/aggregator/log"
-	"github.com/BlockPILabs/aggregator/middleware"
-	"github.com/BlockPILabs/aggregator/rpc"
-	"github.com/valyala/fasthttp"
 	"sync"
 	"time"
+
+	"github.com/valyala/fasthttp"
+
+	"aggregator/internal/client"
+	"aggregator/internal/log"
+	"aggregator/internal/middleware"
+	"aggregator/internal/rpc"
 )
 
 type HttpProxyMiddleware struct {

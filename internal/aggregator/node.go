@@ -1,6 +1,8 @@
 package aggregator
 
-import "net/url"
+import (
+	"net/url"
+)
 
 type Node struct {
 	Name     string `json:"name"`

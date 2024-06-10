@@ -1,10 +1,11 @@
 package plugins
 
 import (
-	"github.com/BlockPILabs/aggregator/aggregator"
-	"github.com/BlockPILabs/aggregator/middleware"
-	"github.com/BlockPILabs/aggregator/rpc"
 	"strings"
+
+	"aggregator/internal/aggregator"
+	"aggregator/internal/middleware"
+	"aggregator/internal/rpc"
 )
 
 var (

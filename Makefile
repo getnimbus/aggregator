@@ -1,6 +1,6 @@
 VERSION := $(shell git describe --tags --always)
 
-GOLDFLAGS += -X github.com/BlockPILabs/aggregator/version.Version=$(VERSION)
+GOLDFLAGS += -X aggregator/internal/version.Version=$(VERSION)
 GOFLAGS = -ldflags "$(GOLDFLAGS)"
 
 all: build

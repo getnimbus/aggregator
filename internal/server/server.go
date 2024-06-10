@@ -1,12 +1,13 @@
 package server
 
 import (
-	"github.com/BlockPILabs/aggregator/config"
-	"github.com/BlockPILabs/aggregator/log"
-	"github.com/BlockPILabs/aggregator/middleware"
-	"github.com/BlockPILabs/aggregator/notify"
-	"github.com/BlockPILabs/aggregator/rpc"
 	"github.com/valyala/fasthttp"
+
+	"aggregator/internal/config"
+	"aggregator/internal/log"
+	"aggregator/internal/middleware"
+	"aggregator/internal/notify"
+	"aggregator/internal/rpc"
 )
 
 var (

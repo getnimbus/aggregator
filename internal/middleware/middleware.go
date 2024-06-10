@@ -1,9 +1,9 @@
 package middleware
 
 import (
-	"github.com/BlockPILabs/aggregator/aggregator"
-	"github.com/BlockPILabs/aggregator/log"
-	"github.com/BlockPILabs/aggregator/rpc"
+	"aggregator/internal/aggregator"
+	"aggregator/internal/log"
+	"aggregator/internal/rpc"
 )
 
 var (

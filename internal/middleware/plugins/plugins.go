@@ -1,6 +1,8 @@
 package plugins
 
-import "github.com/BlockPILabs/aggregator/log"
+import (
+	"aggregator/internal/log"
+)
 
 var (
 	logger = log.Module("plugins")

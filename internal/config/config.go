@@ -4,15 +4,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/BlockPILabs/aggregator/aggregator"
-	"github.com/BlockPILabs/aggregator/log"
-	"github.com/BlockPILabs/aggregator/notify"
-	"github.com/syndtr/goleveldb/leveldb"
-	leveldbErrors "github.com/syndtr/goleveldb/leveldb/errors"
-	"github.com/valyala/fasthttp"
 	"sort"
 	"sync"
 	"time"
+
+	"github.com/syndtr/goleveldb/leveldb"
+	leveldbErrors "github.com/syndtr/goleveldb/leveldb/errors"
+	"github.com/valyala/fasthttp"
+
+	"aggregator/internal/aggregator"
+	"aggregator/internal/log"
+	"aggregator/internal/notify"
 )
 
 var (

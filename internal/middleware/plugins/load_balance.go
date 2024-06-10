@@ -1,11 +1,12 @@
 package plugins
 
 import (
-	"github.com/BlockPILabs/aggregator/aggregator"
-	"github.com/BlockPILabs/aggregator/loadbalance"
-	"github.com/BlockPILabs/aggregator/middleware"
-	"github.com/BlockPILabs/aggregator/rpc"
 	"github.com/valyala/fasthttp"
+
+	"aggregator/internal/aggregator"
+	"aggregator/internal/loadbalance"
+	"aggregator/internal/middleware"
+	"aggregator/internal/rpc"
 )
 
 type LoadBalanceMiddleware struct {

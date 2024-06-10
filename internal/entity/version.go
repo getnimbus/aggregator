@@ -1,4 +1,4 @@
-package version
+package entity
 
 var (
 	Version string

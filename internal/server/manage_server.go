@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"github.com/BlockPILabs/aggregator/config"
-	"github.com/BlockPILabs/aggregator/loadbalance"
-	"github.com/BlockPILabs/aggregator/notify"
+	"net/http"
+
 	"github.com/fasthttp/router"
 	"github.com/valyala/fasthttp"
-	"net/http"
+
+	"aggregator/internal/config"
+	"aggregator/internal/loadbalance"
+	"aggregator/internal/notify"
 )
 
 var basicAuthPrefix = []byte("Basic ")

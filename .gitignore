@@ -1,6 +1,4 @@
 # Binaries for programs and plugins
-.DS_Store
-.idea/
 *.exe
 *.exe~
 *.dll
@@ -13,8 +11,22 @@
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
+# Environment
+.env
+.env.local
+.env.dev
+.env.prod
+
+# IDE
+.DS_Store
+.idea
+.vscode
+
 # Dependency directories (remove the comment below to include it)
-# vendor/
+vendor/
+mocks/
+out/
+wire_gen.go
 build/
 safety/*test*
 safety/*.json

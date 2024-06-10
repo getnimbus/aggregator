@@ -1,10 +1,11 @@
 package loadbalance
 
 import (
-	"github.com/BlockPILabs/aggregator/aggregator"
-	"github.com/BlockPILabs/aggregator/notify"
 	"math/rand"
 	"sync"
+
+	"aggregator/internal/aggregator"
+	"aggregator/internal/notify"
 )
 
 // WrSelector weighted-random selector

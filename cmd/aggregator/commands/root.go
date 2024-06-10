@@ -2,8 +2,9 @@ package commands
 
 import (
 	"errors"
-	"github.com/urfave/cli/v2"
 	"os"
+
+	"github.com/urfave/cli/v2"
 )
 
 func RootApp() *cli.App {
