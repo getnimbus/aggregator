@@ -1,3 +1,4 @@
+# Build stage
 FROM golang:1.22.0-bookworm as builder
 
 RUN apt update && apt install curl unzip -y
@@ -18,7 +19,7 @@ COPY . .
 # Build docker
 RUN make static
 
-######## Start a new stage from scratch #######
+# Run stage
 FROM alpine:3.13 as production
 
 RUN apk --no-cache add ca-certificates tzdata htop tini bash curl
