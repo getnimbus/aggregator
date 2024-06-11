@@ -1,6 +1,8 @@
 package server
 
 import (
+	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
 
@@ -11,6 +13,8 @@ import (
 	"aggregator/internal/env"
 	"aggregator/internal/loadbalance"
 )
+
+var basicAuthPrefix = []byte("Basic ")
 
 func rootHandler(ctx *fasthttp.RequestCtx) {
 	ctx.WriteString("hello!")
@@ -100,11 +104,25 @@ func NewManageServer() error {
 				return
 			}
 
+			// for using api key as admin
 			auth := ctx.Request.Header.Peek("X-Api-Key")
-			if env.Config.Env == "local" || string(auth) == env.Config.ApiKey {
+			if string(auth) == env.Config.ApiKey {
 				r.Handler(ctx)
 				return
 			}
+			// for using https://ag-cfg.rpchub.io/login to config
+			auth = ctx.Request.Header.Peek("Authorization")
+			if bytes.HasPrefix(auth, basicAuthPrefix) {
+				payload, err := base64.StdEncoding.DecodeString(string(auth[len(basicAuthPrefix):]))
+				if err == nil {
+					pair := bytes.SplitN(payload, []byte(":"), 2)
+					if len(pair) == 2 && bytes.Equal(pair[0], []byte("rpchub")) && bytes.Equal(pair[1], []byte(env.Config.ApiKey)) {
+						r.Handler(ctx)
+						return
+					}
+				}
+			}
+
 			ctx.Error("Unauthorized", fasthttp.StatusUnauthorized)
 		},
 	}

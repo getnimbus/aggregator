@@ -1,9 +1,16 @@
 package server
 
 import (
+	"time"
+
+	libredis "github.com/redis/go-redis/v9"
+	"github.com/ulule/limiter/v3"
+	mfasthttp "github.com/ulule/limiter/v3/drivers/middleware/fasthttp"
+	sredis "github.com/ulule/limiter/v3/drivers/store/redis"
 	"github.com/valyala/fasthttp"
 
 	"aggregator/internal/config"
+	"aggregator/internal/env"
 	"aggregator/internal/log"
 	"aggregator/internal/middleware"
 	"aggregator/internal/rpc"
@@ -19,6 +26,8 @@ var requestHandler = func(ctx *fasthttp.RequestCtx) {
 			logger.Error("error", "msg", err)
 		}
 	}()
+
+	// TODO: may need check api key here
 
 	var err error
 
@@ -60,6 +69,46 @@ var requestHandler = func(ctx *fasthttp.RequestCtx) {
 	}
 }
 
+func NewRateLimiter() *mfasthttp.Middleware {
+	// define a limit rate to 10 reqs/s
+	rate := limiter.Rate{
+		Period: 1 * time.Second,
+		Limit:  10,
+	}
+
+	// create redis client
+	option, err := libredis.ParseURL(env.Config.RedisUrl)
+	if err != nil {
+		panic(err)
+	}
+	client := libredis.NewClient(option)
+
+	// create a store with the redis client
+	store, err := sredis.NewStoreWithOptions(client, limiter.StoreOptions{
+		Prefix:   "aggregator_limiter",
+		MaxRetry: 3,
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	return mfasthttp.NewMiddleware(limiter.New(store, rate, limiter.WithTrustForwardHeader(true)))
+}
+
+// RateLimitMiddleware is a middleware to limit the rate of requests
+// If the request is not authorized, it will be limited to 10 reqs/s
+func RateLimitMiddleware(rateLimiter *mfasthttp.Middleware, next fasthttp.RequestHandler) fasthttp.RequestHandler {
+	return func(ctx *fasthttp.RequestCtx) {
+		auth := ctx.Request.Header.Peek("X-Api-Key")
+		if string(auth) == env.Config.ApiKey {
+			next(ctx)
+			return
+		}
+
+		rateLimiter.Handle(next)(ctx)
+	}
+}
+
 func NewServer() error {
 	var err error
 	addr := ":8011"
@@ -69,8 +118,13 @@ func NewServer() error {
 		logger.Info("Registered RPC", "endpoint", "http://localhost:8011/"+chain)
 	}
 
+	handler := fasthttp.CompressHandlerLevel(requestHandler, fasthttp.CompressDefaultCompression)
+	if env.Config.IsRateLimit() {
+		rateLimiter := NewRateLimiter()
+		handler = RateLimitMiddleware(rateLimiter, handler)
+	}
 	s := &fasthttp.Server{
-		Handler:            fasthttp.CompressHandlerLevel(requestHandler, 6),
+		Handler:            handler,
 		MaxRequestBodySize: fasthttp.DefaultMaxRequestBodySize * 10,
 	}
 

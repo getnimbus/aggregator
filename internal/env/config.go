@@ -23,8 +23,10 @@ func init() {
 type config struct {
 	Env              string `mapstructure:"ENV" default:"dev"`
 	Debug            string `mapstructure:"DEBUG" default:"no"`
+	RateLimit        string `mapstructure:"RATE_LIMIT" default:"no"`
 	ApiKey           string `mapstructure:"API_KEY" default:"-"`
 	DefaultConfigUrl string `mapstructure:"DEFAULT_CONFIG_URL" default:"https://cfg.rpchub.io/agg/default.json"`
+	RedisUrl         string `mapstructure:"REDIS_URL" default:"redis://localhost:6379"`
 }
 
 func (c *config) IsLocal() bool {
@@ -41,6 +43,10 @@ func (c *config) IsProd() bool {
 
 func (c *config) IsDebug() bool {
 	return strings.ToLower(c.Debug) == "yes"
+}
+
+func (c *config) IsRateLimit() bool {
+	return strings.ToLower(c.RateLimit) == "yes"
 }
 
 // LoadConfig read configuration for both file and system environment
