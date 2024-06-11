@@ -5,6 +5,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/failsafe-go/failsafe-go"
+	"github.com/failsafe-go/failsafe-go/circuitbreaker"
 	cmap "github.com/orcaman/concurrent-map/v2"
 	"github.com/valyala/fasthttp"
 
@@ -22,16 +24,19 @@ type HttpProxyMiddleware struct {
 	clientCreatedAt  time.Time
 	clientRenew      time.Duration
 	mu               sync.Mutex
+	cbs              cmap.ConcurrentMap[string, circuitbreaker.CircuitBreaker[any]]
 	disableEndpoints cmap.ConcurrentMap[string, int64]
 }
 
 func NewHttpProxyMiddleware() *HttpProxyMiddleware {
+	cbs := cmap.New[circuitbreaker.CircuitBreaker[any]]()
 	disableEndpoints := cmap.New[int64]()
 
 	return &HttpProxyMiddleware{
 		enabled:          true,
 		clientRenew:      time.Second * 60,
 		mu:               sync.Mutex{},
+		cbs:              cbs,
 		disableEndpoints: disableEndpoints,
 	}
 }
@@ -59,8 +64,22 @@ func (m *HttpProxyMiddleware) OnRequest(session *rpc.Session) error {
 func (m *HttpProxyMiddleware) OnProcess(session *rpc.Session) error {
 	if ctx, ok := session.RequestCtx.(*fasthttp.RequestCtx); ok {
 		logger.Debug("relay rpc -> "+session.RpcMethod(), "sid", session.SId(), "node", session.NodeName, "isTx", session.IsWriteRpcMethod, "tries", session.Tries)
-		err := m.GetClient(session).Do(&ctx.Request, &ctx.Response)
 
+		// circuit breaker opens after 5 failures, half-opens after 1 minute, closes after 2 successes
+		cb, ok := m.cbs.Get(session.NodeName)
+		if !ok {
+			cb = circuitbreaker.Builder[any]().
+				WithFailureThreshold(5).
+				WithDelay(time.Minute).
+				WithSuccessThreshold(2).
+				Build()
+			m.cbs.Set(session.NodeName, cb)
+		}
+		err := failsafe.Run(func() error {
+			return m.GetClient(session).Do(&ctx.Request, &ctx.Response)
+		}, cb)
+
+		// TODO: add response headers
 		//if ctx, ok := session.RequestCtx.(*fasthttp.RequestCtx); ok {
 		//	ctx.Response.Header.Set("Access-Control-Max-Age", "86400")
 		//	ctx.Response.Header.Set("Access-Control-Allow-Origin", "*")
@@ -111,7 +130,7 @@ func (m *HttpProxyMiddleware) GetClient(session *rpc.Session) *client.Client {
 		}
 	}
 
-	//log.Debug("renew proxy http client")
+	log.Debug("renew proxy http client")
 	m.client = client.NewClient(session.Cfg.RequestTimeout, session.Cfg.Proxy)
 	m.clientCreatedAt = time.Now()
 

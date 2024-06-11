@@ -10,10 +10,15 @@ import (
 
 var (
 	defaultWriteMethods = []string{
+		// for EVM
 		strings.ToLower("_call"),
 		strings.ToLower("_sendRawTransaction"),
 		strings.ToLower("_sendTransaction"),
 		strings.ToLower("_sendTransactionAsFeePayer"),
+		// for SUI
+		strings.ToLower("sui_devInspectTransactionBlock"),
+		strings.ToLower("sui_dryRunTransactionBlock"),
+		strings.ToLower("sui_executeTransactionBlock"),
 	}
 )
 
