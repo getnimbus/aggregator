@@ -37,7 +37,7 @@ COPY --from=builder /src/out /bin/
 HEALTHCHECK --interval=30s --timeout=30s --retries=5 --start-period=30s CMD curl -f http://localhost:8012/status || exit 1
 
 # Expose ports
-EXPOSE 8012
+EXPOSE 8011 8012
 
 # Command to run the executable
 CMD ["tini", "--", "/bin/aggregator"]

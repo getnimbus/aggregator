@@ -10,9 +10,15 @@ import (
 
 	"aggregator/cmd/aggregator/commands"
 	"aggregator/internal/entity"
+	"aggregator/internal/env"
 )
 
 func main() {
+	// load env
+	if err := env.LoadConfig("."); err != nil {
+		panic(fmt.Errorf("cannot load config: %v", err))
+	}
+
 	println(entity.Version)
 
 	time.Local = time.UTC
