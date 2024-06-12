@@ -106,7 +106,7 @@ func (m *HttpProxyMiddleware) OnProcess(session *rpc.Session) error {
 			lastTime, ok := m.disableEndpoints.Get(session.NodeName)
 			if !ok || now >= lastTime+60*60*1000 { // last alert time is more than 1 hour ago then re-alert
 				m.disableEndpoints.Set(session.NodeName, now)
-				alert.AlertDiscord(ctx, fmt.Sprintf("disable endpoint %s err %v", session.NodeName, err))
+				alert.AlertDiscord(ctx, fmt.Sprintf("disable endpoint %s - status code %d - err %v", session.NodeName, statusCode, err))
 			}
 		}
 
