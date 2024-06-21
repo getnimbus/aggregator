@@ -56,6 +56,7 @@ require (
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
+	github.com/yudppp/throttle v1.0.4 // indirect
 	go.opentelemetry.io/otel v1.7.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.7.0 // indirect
 	go.opentelemetry.io/otel/trace v1.7.0 // indirect

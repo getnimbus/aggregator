@@ -3,10 +3,14 @@ package alert
 import (
 	"context"
 	"os"
+	"time"
 
 	"github.com/getnimbus/ultrago/u_logger"
 	"github.com/gtuk/discordwebhook"
+	"github.com/yudppp/throttle"
 )
+
+var throttler = throttle.New(time.Second)
 
 func AlertDiscord(ctx context.Context, message string) {
 	ctx, logger := u_logger.GetLogger(ctx)
@@ -17,10 +21,12 @@ func AlertDiscord(ctx context.Context, message string) {
 		return
 	}
 
-	if err := discordwebhook.SendMessage(discordEnv, discordwebhook.Message{
-		Content: &message,
-	}); err != nil {
-		logger.Warnf("failed to send message to discord: %v", err)
-		return
-	}
+	throttler.Do(func() {
+		if err := discordwebhook.SendMessage(discordEnv, discordwebhook.Message{
+			Content: &message,
+		}); err != nil {
+			logger.Warnf("failed to send message to discord: %v", err)
+			return
+		}
+	})
 }
