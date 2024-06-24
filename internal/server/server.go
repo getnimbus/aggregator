@@ -70,10 +70,10 @@ var requestHandler = func(ctx *fasthttp.RequestCtx) {
 }
 
 func NewRateLimiter() *mfasthttp.Middleware {
-	// define a limit rate to 10 reqs/s
+	// define a limit rate to 20 reqs/s
 	rate := limiter.Rate{
 		Period: 1 * time.Second,
-		Limit:  10,
+		Limit:  20,
 	}
 
 	// create redis client
@@ -96,11 +96,13 @@ func NewRateLimiter() *mfasthttp.Middleware {
 }
 
 // RateLimitMiddleware is a middleware to limit the rate of requests
-// If the request is not authorized, it will be limited to 10 reqs/s
 func RateLimitMiddleware(rateLimiter *mfasthttp.Middleware, next fasthttp.RequestHandler) fasthttp.RequestHandler {
 	return func(ctx *fasthttp.RequestCtx) {
-		auth := ctx.Request.Header.Peek("X-Api-Key")
-		if string(auth) == env.Config.ApiKey {
+		auth := ctx.QueryArgs().Peek("key")
+		if len(auth) == 0 {
+			auth = ctx.Request.Header.Peek("X-Api-Key")
+		}
+		if len(auth) > 0 && string(auth) == env.Config.ApiKey {
 			next(ctx)
 			return
 		}
