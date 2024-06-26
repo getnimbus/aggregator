@@ -97,6 +97,7 @@ func (m *HttpProxyMiddleware) OnProcess(session *rpc.Session) error {
 		statusCode := ctx.Response.StatusCode()
 		if statusCode/100 != 2 {
 			log.Error("error status code", "code", statusCode, "node", session.NodeName)
+			err = fmt.Errorf("error status code %d - node %s", statusCode, session.NodeName)
 			shouldDisableEndpoint = true
 		}
 
