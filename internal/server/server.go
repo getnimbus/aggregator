@@ -86,7 +86,7 @@ func NewRateLimiter() *mfasthttp.Middleware {
 	// create a store with the redis client
 	store, err := sredis.NewStoreWithOptions(client, limiter.StoreOptions{
 		Prefix:   "aggregator_limiter",
-		MaxRetry: 3,
+		MaxRetry: 5,
 	})
 	if err != nil {
 		panic(err)
