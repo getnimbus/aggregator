@@ -2,6 +2,7 @@ package plugins
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -88,30 +89,43 @@ func (m *HttpProxyMiddleware) OnProcess(session *rpc.Session) error {
 		//	ctx.Response.Header.Set("X-Do-Node", session.NodeName)
 		//}
 
-		shouldDisableEndpoint := false
+		var shouldDisableEndpoint = false
+		// alert if error
+		defer func() {
+			if shouldDisableEndpoint {
+				now := time.Now().UnixMilli()
+				lastTime, ok := m.disableEndpoints.Get(session.NodeName)
+				if !ok || now >= lastTime+60*60*1000 { // last alert time is more than 1 hour ago then re-alert
+					m.disableEndpoints.Set(session.NodeName, now)
+					alert.AlertDiscord(ctx, fmt.Sprintf("disable endpoint: %s, err: %v", session.NodeName, err))
+				}
+			}
+		}()
+
 		if err != nil {
 			log.Error(err.Error(), "node", session.NodeName)
 			shouldDisableEndpoint = true
+			return err
 		}
 
 		statusCode := ctx.Response.StatusCode()
 		if statusCode/100 != 2 {
 			log.Error("error status code", "code", statusCode, "node", session.NodeName)
-			err = fmt.Errorf("error status code %d - node %s", statusCode, session.NodeName)
+			err = fmt.Errorf("error status code %d", statusCode)
 			shouldDisableEndpoint = true
+			return err
 		}
 
-		if shouldDisableEndpoint {
-			// TODO: disable endpoint
-			now := time.Now().UnixMilli()
-			lastTime, ok := m.disableEndpoints.Get(session.NodeName)
-			if !ok || now >= lastTime+60*60*1000 { // last alert time is more than 1 hour ago then re-alert
-				m.disableEndpoints.Set(session.NodeName, now)
-				alert.AlertDiscord(ctx, fmt.Sprintf("disable endpoint %s - status code %d - err %v", session.NodeName, statusCode, err))
-			}
+		// check response header
+		contentType := ctx.Response.Header.Peek("Content-Type")
+		if !strings.Contains(string(contentType), "application/json") {
+			log.Error("invalid response content type", contentType, "node", session.NodeName)
+			err = fmt.Errorf("invalid response content type %s", contentType)
+			shouldDisableEndpoint = true
+			return err
 		}
 
-		return err
+		return nil
 	}
 
 	return nil

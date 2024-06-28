@@ -3,6 +3,8 @@ package plugins
 import (
 	"strings"
 
+	"github.com/valyala/fasthttp"
+
 	"aggregator/internal/aggregator"
 	"aggregator/internal/middleware"
 	"aggregator/internal/rpc"
@@ -48,7 +50,6 @@ func (m *RequestValidatorMiddleware) SetNext(middleware middleware.Middleware) {
 }
 
 func (m *RequestValidatorMiddleware) OnRequest(session *rpc.Session) error {
-
 	if session.Method == "OPTIONS" {
 		return aggregator.ErrMustReturn
 	}
@@ -56,6 +57,10 @@ func (m *RequestValidatorMiddleware) OnRequest(session *rpc.Session) error {
 	//if session.Method != "POST" {
 	//	return aggregator.ErrInvalidMethod
 	//}
+
+	if ctx, ok := session.RequestCtx.(*fasthttp.RequestCtx); ok {
+		ctx.Request.Header.Set("Accept", "application/json")
+	}
 
 	session.IsWriteRpcMethod = m.isWriteMethod(session.RpcMethod())
 
