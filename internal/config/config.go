@@ -23,7 +23,7 @@ var (
 
 	_Config = &Config{
 		RequestTimeout:           60,
-		MaxRetries:               5,
+		MaxRetries:               3,
 		PhishingDb:               []string{defaultPhishingDb},
 		PhishingDbUpdateInterval: 3600,
 	}
