@@ -8,6 +8,7 @@ import (
 
 	"github.com/failsafe-go/failsafe-go"
 	"github.com/failsafe-go/failsafe-go/circuitbreaker"
+	"github.com/failsafe-go/failsafe-go/timeout"
 	cmap "github.com/orcaman/concurrent-map/v2"
 	"github.com/valyala/fasthttp"
 
@@ -25,19 +26,19 @@ type HttpProxyMiddleware struct {
 	clientCreatedAt  time.Time
 	clientRenew      time.Duration
 	mu               sync.Mutex
-	cbs              cmap.ConcurrentMap[string, circuitbreaker.CircuitBreaker[any]]
+	policiesMap      cmap.ConcurrentMap[string, []failsafe.Policy[any]] // fault tolerant policies by node
 	disableEndpoints cmap.ConcurrentMap[string, int64]
 }
 
 func NewHttpProxyMiddleware() *HttpProxyMiddleware {
-	cbs := cmap.New[circuitbreaker.CircuitBreaker[any]]()
+	policiesMap := cmap.New[[]failsafe.Policy[any]]()
 	disableEndpoints := cmap.New[int64]()
 
 	return &HttpProxyMiddleware{
 		enabled:          true,
 		clientRenew:      time.Second * 60,
 		mu:               sync.Mutex{},
-		cbs:              cbs,
+		policiesMap:      policiesMap,
 		disableEndpoints: disableEndpoints,
 	}
 }
@@ -66,19 +67,24 @@ func (m *HttpProxyMiddleware) OnProcess(session *rpc.Session) error {
 	if ctx, ok := session.RequestCtx.(*fasthttp.RequestCtx); ok {
 		logger.Debug("relay rpc -> "+session.RpcMethod(), "sid", session.SId(), "node", session.NodeName, "isTx", session.IsWriteRpcMethod, "tries", session.Tries)
 
-		// circuit breaker opens after 5 failures, half-opens after 1 minute, closes after 2 successes
-		cb, ok := m.cbs.Get(session.NodeName)
+		policies, ok := m.policiesMap.Get(session.NodeName)
 		if !ok {
-			cb = circuitbreaker.Builder[any]().
-				WithFailureThreshold(5).
+			policies = make([]failsafe.Policy[any], 0)
+			// circuit breaker opens after 3 failures, half-opens after 1 minute, closes after 2 successes
+			circuitBreaker := circuitbreaker.Builder[any]().
+				WithFailureThreshold(3).
 				WithDelay(time.Minute).
 				WithSuccessThreshold(2).
 				Build()
-			m.cbs.Set(session.NodeName, cb)
+			// timeout after 60 seconds
+			timeoutPolicy := timeout.With[any](60 * time.Second)
+			policies = append(policies, circuitBreaker, timeoutPolicy)
+			m.policiesMap.Set(session.NodeName, policies)
 		}
+
 		err := failsafe.Run(func() error {
 			return m.GetClient(session).Do(&ctx.Request, &ctx.Response)
-		}, cb)
+		}, policies...)
 
 		// TODO: add response headers
 		//if ctx, ok := session.RequestCtx.(*fasthttp.RequestCtx); ok {
