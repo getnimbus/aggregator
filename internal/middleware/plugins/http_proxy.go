@@ -13,7 +13,9 @@ import (
 	cmap "github.com/orcaman/concurrent-map/v2"
 	"github.com/valyala/fasthttp"
 
+	"aggregator/internal/aggregator"
 	"aggregator/internal/client"
+	"aggregator/internal/loadbalance"
 	"aggregator/internal/log"
 	"aggregator/internal/middleware"
 	"aggregator/internal/rpc"
@@ -74,8 +76,18 @@ func (m *HttpProxyMiddleware) OnProcess(session *rpc.Session) error {
 		log.Debug("relay rpc -> "+session.RpcMethod(), "sid", session.SId(), "node", session.NodeName, "isTx", session.IsWriteRpcMethod, "tries", session.Tries)
 
 		if _, ok := m.disableEndpoints.Get(session.NodeName); ok {
-			log.Error("node is disabled: " + session.NodeName)
-			return fmt.Errorf("node is disabled: %s", session.NodeName)
+			retries := 3
+			for {
+				if retries == 0 {
+					return aggregator.ErrServerError
+				}
+				node := loadbalance.NextNode(session.Chain)
+				if node != nil {
+					session.NodeName = node.Name
+					break
+				}
+				retries--
+			}
 		}
 
 		policies, ok := m.policiesMap.Get(session.NodeName)
