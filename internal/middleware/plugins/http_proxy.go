@@ -22,7 +22,7 @@ import (
 	"aggregator/pkg/alert"
 )
 
-var INVALID_STATUS_CODES = []int{401, 403, 429}
+var DISABLED_NODE_STATUS_CODES = []int{401, 403, 502}
 
 type HttpProxyMiddleware struct {
 	nextMiddleware   middleware.Middleware
@@ -84,6 +84,7 @@ func (m *HttpProxyMiddleware) OnProcess(session *rpc.Session) error {
 				node := loadbalance.NextNode(session.Chain)
 				if node != nil {
 					session.NodeName = node.Name
+					ctx.Request.SetRequestURI(node.Endpoint)
 					break
 				}
 				retries--
@@ -138,15 +139,15 @@ func (m *HttpProxyMiddleware) OnProcess(session *rpc.Session) error {
 		}
 
 		statusCode := ctx.Response.StatusCode()
-		// block nodes that returns 401 or 403
-		if statusCode == 401 || statusCode == 403 {
+		// block nodes that return invalid status code
+		if slices.Contains(DISABLED_NODE_STATUS_CODES, statusCode) {
 			now := time.Now().UnixMilli()
 			_, ok := m.disableEndpoints.Get(session.NodeName)
 			if !ok {
 				m.disableEndpoints.Set(session.NodeName, now)
 			}
 		}
-		if statusCode/100 != 2 || slices.Contains(INVALID_STATUS_CODES, statusCode) {
+		if statusCode/100 != 2 || slices.Contains(DISABLED_NODE_STATUS_CODES, statusCode) || statusCode == 429 {
 			log.Error("error status code", "code", statusCode, "node", session.NodeName)
 			err = fmt.Errorf("error status code %d", statusCode)
 			shouldDisableEndpoint = true
@@ -159,6 +160,11 @@ func (m *HttpProxyMiddleware) OnProcess(session *rpc.Session) error {
 			log.Error("invalid response content type", contentType, "node", session.NodeName)
 			err = fmt.Errorf("invalid response content type %s", contentType)
 			shouldDisableEndpoint = true
+			now := time.Now().UnixMilli()
+			_, ok := m.disableEndpoints.Get(session.NodeName)
+			if !ok {
+				m.disableEndpoints.Set(session.NodeName, now)
+			}
 			return err
 		}
 
