@@ -76,6 +76,7 @@ func (m *HttpProxyMiddleware) OnProcess(session *rpc.Session) error {
 		log.Debug("relay rpc -> "+session.RpcMethod(), "sid", session.SId(), "node", session.NodeName, "isTx", session.IsWriteRpcMethod, "tries", session.Tries)
 
 		if _, ok := m.disableEndpoints.Get(session.NodeName); ok {
+			log.Debug("disabled endpoint", "node", session.NodeName)
 			retries := 3
 			for {
 				if retries == 0 {
@@ -85,6 +86,7 @@ func (m *HttpProxyMiddleware) OnProcess(session *rpc.Session) error {
 				if node != nil {
 					session.NodeName = node.Name
 					ctx.Request.SetRequestURI(node.Endpoint)
+					log.Debug("retry to node", "node", node.Name, "endpoint", node.Endpoint)
 					break
 				}
 				retries--
