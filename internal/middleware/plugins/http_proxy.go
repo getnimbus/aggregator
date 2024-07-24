@@ -2,6 +2,7 @@ package plugins
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -19,6 +20,8 @@ import (
 	"aggregator/pkg/alert"
 )
 
+var INVALID_STATUS_CODES = []int{401, 403, 429}
+
 type HttpProxyMiddleware struct {
 	nextMiddleware   middleware.Middleware
 	enabled          bool
@@ -27,11 +30,13 @@ type HttpProxyMiddleware struct {
 	clientRenew      time.Duration
 	mu               sync.Mutex
 	policiesMap      cmap.ConcurrentMap[string, []failsafe.Policy[any]] // fault tolerant policies by node
+	alertEndpoints   cmap.ConcurrentMap[string, int64]
 	disableEndpoints cmap.ConcurrentMap[string, int64]
 }
 
 func NewHttpProxyMiddleware() *HttpProxyMiddleware {
 	policiesMap := cmap.New[[]failsafe.Policy[any]]()
+	alertEndpoints := cmap.New[int64]()
 	disableEndpoints := cmap.New[int64]()
 
 	return &HttpProxyMiddleware{
@@ -39,6 +44,7 @@ func NewHttpProxyMiddleware() *HttpProxyMiddleware {
 		clientRenew:      time.Second * 60,
 		mu:               sync.Mutex{},
 		policiesMap:      policiesMap,
+		alertEndpoints:   alertEndpoints,
 		disableEndpoints: disableEndpoints,
 	}
 }
@@ -65,7 +71,12 @@ func (m *HttpProxyMiddleware) OnRequest(session *rpc.Session) error {
 
 func (m *HttpProxyMiddleware) OnProcess(session *rpc.Session) error {
 	if ctx, ok := session.RequestCtx.(*fasthttp.RequestCtx); ok {
-		logger.Debug("relay rpc -> "+session.RpcMethod(), "sid", session.SId(), "node", session.NodeName, "isTx", session.IsWriteRpcMethod, "tries", session.Tries)
+		log.Debug("relay rpc -> "+session.RpcMethod(), "sid", session.SId(), "node", session.NodeName, "isTx", session.IsWriteRpcMethod, "tries", session.Tries)
+
+		if _, ok := m.disableEndpoints.Get(session.NodeName); ok {
+			log.Error("node is disabled: " + session.NodeName)
+			return fmt.Errorf("node is disabled: %s", session.NodeName)
+		}
 
 		policies, ok := m.policiesMap.Get(session.NodeName)
 		if !ok {
@@ -100,9 +111,9 @@ func (m *HttpProxyMiddleware) OnProcess(session *rpc.Session) error {
 		defer func() {
 			if shouldDisableEndpoint {
 				now := time.Now().UnixMilli()
-				lastTime, ok := m.disableEndpoints.Get(session.NodeName)
+				lastTime, ok := m.alertEndpoints.Get(session.NodeName)
 				if !ok || now >= lastTime+60*60*1000 { // last alert time is more than 1 hour ago then re-alert
-					m.disableEndpoints.Set(session.NodeName, now)
+					m.alertEndpoints.Set(session.NodeName, now)
 					alert.AlertDiscord(ctx, fmt.Sprintf("disable endpoint: %s, err: %v", session.NodeName, err))
 				}
 			}
@@ -115,7 +126,15 @@ func (m *HttpProxyMiddleware) OnProcess(session *rpc.Session) error {
 		}
 
 		statusCode := ctx.Response.StatusCode()
-		if statusCode/100 != 2 {
+		// block nodes that returns 401 or 403
+		if statusCode == 401 || statusCode == 403 {
+			now := time.Now().UnixMilli()
+			_, ok := m.disableEndpoints.Get(session.NodeName)
+			if !ok {
+				m.disableEndpoints.Set(session.NodeName, now)
+			}
+		}
+		if statusCode/100 != 2 || slices.Contains(INVALID_STATUS_CODES, statusCode) {
 			log.Error("error status code", "code", statusCode, "node", session.NodeName)
 			err = fmt.Errorf("error status code %d", statusCode)
 			shouldDisableEndpoint = true
