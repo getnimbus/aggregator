@@ -1,6 +1,7 @@
 package plugins
 
 import (
+	"encoding/json"
 	"fmt"
 	"slices"
 	"strings"
@@ -104,7 +105,7 @@ func (m *HttpProxyMiddleware) OnProcess(session *rpc.Session) error {
 				Build()
 			// timeout after 60 seconds
 			timeoutPolicy := timeout.With[any](60 * time.Second)
-			policies = append(policies, circuitBreaker, timeoutPolicy)
+			policies = append(policies, timeoutPolicy, circuitBreaker)
 			m.policiesMap.Set(session.NodeName, policies)
 		}
 
@@ -137,6 +138,7 @@ func (m *HttpProxyMiddleware) OnProcess(session *rpc.Session) error {
 		if err != nil {
 			log.Error(err.Error(), "node", session.NodeName)
 			shouldDisableEndpoint = true
+			ctx.SetStatusCode(500)
 			return err
 		}
 
@@ -152,7 +154,8 @@ func (m *HttpProxyMiddleware) OnProcess(session *rpc.Session) error {
 		if statusCode/100 != 2 || slices.Contains(DISABLED_NODE_STATUS_CODES, statusCode) || statusCode == 429 {
 			log.Error("error status code", "code", statusCode, "node", session.NodeName)
 			err = fmt.Errorf("error status code %d", statusCode)
-			shouldDisableEndpoint = true
+			//shouldDisableEndpoint = true
+			ctx.SetStatusCode(statusCode)
 			return err
 		}
 
@@ -167,7 +170,20 @@ func (m *HttpProxyMiddleware) OnProcess(session *rpc.Session) error {
 			if !ok {
 				m.disableEndpoints.Set(session.NodeName, now)
 			}
+			ctx.SetStatusCode(500)
 			return err
+		}
+
+		// check response body
+		var response map[string]interface{}
+		if err := json.Unmarshal(ctx.Response.Body(), &response); err == nil {
+			if _, ok := response["error"]; ok {
+				log.Error("error response", "node", session.NodeName, "response", string(ctx.Response.Body()))
+				err = fmt.Errorf("error response %s", string(ctx.Response.Body()))
+				shouldDisableEndpoint = true
+				ctx.SetStatusCode(400)
+				return err
+			}
 		}
 
 		return nil
