@@ -1,6 +1,7 @@
 package client
 
 import (
+	"crypto/tls"
 	"strings"
 	"time"
 
@@ -23,6 +24,7 @@ func NewClient(timeout int64, proxy string) *Client {
 	cli := &Client{
 		client: fasthttp.Client{
 			MaxConnsPerHost: 65000,
+			TLSConfig:       &tls.Config{InsecureSkipVerify: true}, // only use for read-only rpc, if rpc is used for write transactions, please remove this line
 			//Dial: func(addr string) (net.Conn, error) {
 			//	return nil, nil
 			//},
