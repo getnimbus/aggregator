@@ -125,7 +125,7 @@ func (m *HttpProxyMiddleware) OnProcess(session *rpc.Session) error {
 		var shouldDisableEndpoint = false
 		// alert if error
 		defer func() {
-			if shouldDisableEndpoint {
+			if shouldDisableEndpoint && err != nil {
 				now := time.Now().UnixMilli()
 				lastTime, ok := m.alertEndpoints.Get(session.NodeName)
 				if !ok || now >= lastTime+60*60*1000 { // last alert time is more than 1 hour ago then re-alert
@@ -137,6 +137,7 @@ func (m *HttpProxyMiddleware) OnProcess(session *rpc.Session) error {
 
 		if err != nil {
 			log.Error(err.Error(), "node", session.NodeName)
+			err = fmt.Errorf("request error %v", err)
 			shouldDisableEndpoint = true
 			ctx.SetStatusCode(500)
 			return err
@@ -176,7 +177,7 @@ func (m *HttpProxyMiddleware) OnProcess(session *rpc.Session) error {
 
 		// check response body
 		var response map[string]interface{}
-		if err := json.Unmarshal(ctx.Response.Body(), &response); err == nil {
+		if err1 := json.Unmarshal(ctx.Response.Body(), &response); err1 == nil {
 			if _, ok := response["error"]; ok {
 				log.Error("error response", "node", session.NodeName, "response", string(ctx.Response.Body()))
 				err = fmt.Errorf("error response %s", string(ctx.Response.Body()))
