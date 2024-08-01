@@ -103,8 +103,8 @@ func (m *HttpProxyMiddleware) OnProcess(session *rpc.Session) error {
 				WithDelay(time.Minute).
 				WithSuccessThreshold(2).
 				Build()
-			// timeout after 60 seconds
-			timeoutPolicy := timeout.With[any](60 * time.Second)
+			// timeout after 90 seconds
+			timeoutPolicy := timeout.With[any](90 * time.Second)
 			policies = append(policies, timeoutPolicy, circuitBreaker)
 			m.policiesMap.Set(session.NodeName, policies)
 		}
