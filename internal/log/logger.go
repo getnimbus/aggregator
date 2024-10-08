@@ -5,14 +5,19 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/inconshreveable/log15"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 type Logger interface {
-	log15.Logger
+	Debug(msg string, ctx ...interface{})
+	Info(msg string, ctx ...interface{})
+	Warn(msg string, ctx ...interface{})
+	Error(msg string, ctx ...interface{})
+	Crit(msg string, ctx ...interface{})
 	Trace(msg string, ctx ...interface{})
 	NewLogger(ctx ...interface{}) Logger
-	SetLevel(lvl log15.Lvl) Logger
+	SetLevel(lvl zapcore.Level) Logger
 	SetLevelString(lvlString string) Logger
 	NewContextLogger(c context.Context, ctx ...interface{}) (context.Context, Logger)
 }
@@ -21,47 +26,66 @@ type loggerCtx struct {
 }
 
 type logger struct {
-	log15.Logger
+	*zap.Logger
 }
 
-func (l *logger) GetHandler() log15.Handler {
-	return l.Logger.GetHandler()
-}
-
-func (l *logger) SetHandler(h log15.Handler) {
-	l.Logger.SetHandler(h)
-}
 func (l *logger) NewLogger(ctx ...interface{}) Logger {
-	return &logger{Logger: l.Logger.New(ctx...)}
+	newLogger := l.With(convertCtxToZapFields(ctx)...)
+	return &logger{Logger: newLogger}
 }
+
 func (l *logger) NewContextLogger(c context.Context, ctx ...interface{}) (context.Context, Logger) {
 	nl := l.NewLogger(ctx...)
 	return WithContext(c, nl), nl
 }
-func (l *logger) SetLevel(lvl log15.Lvl) Logger {
-	l.SetHandler(log15.LvlFilterHandler(lvl, l.GetHandler()))
+
+func (l *logger) SetLevel(lvl zapcore.Level) Logger {
+	config := zap.NewProductionConfig()
+	config.Level = zap.NewAtomicLevelAt(lvl)
+	newLogger, _ := config.Build()
+	l.Logger = newLogger
 	return l
 }
+
 func (l *logger) SetLevelString(lvlString string) Logger {
-	lvl, err := log15.LvlFromString(lvlString)
-	if err != nil {
+	var lvl zapcore.Level
+	if err := lvl.UnmarshalText([]byte(lvlString)); err != nil {
 		return l
 	}
 	return l.SetLevel(lvl)
 }
-func (l *logger) New(ctx ...interface{}) log15.Logger {
-	return l.NewLogger(ctx...)
+
+func (l *logger) Debug(msg string, ctx ...interface{}) {
+	l.Logger.Debug(msg, convertCtxToZapFields(ctx)...)
+}
+
+func (l *logger) Info(msg string, ctx ...interface{}) {
+	l.Logger.Info(msg, convertCtxToZapFields(ctx)...)
+}
+
+func (l *logger) Warn(msg string, ctx ...interface{}) {
+	l.Logger.Warn(msg, convertCtxToZapFields(ctx)...)
+}
+
+func (l *logger) Error(msg string, ctx ...interface{}) {
+	l.Logger.Error(msg, convertCtxToZapFields(ctx)...)
+}
+
+func (l *logger) Crit(msg string, ctx ...interface{}) {
+	l.Logger.Error(msg, convertCtxToZapFields(ctx)...)
 }
 
 func (l *logger) Trace(msg string, ctx ...interface{}) {
-	l.Logger.Error(msg, ctx...)
+	l.Logger.Debug(msg, convertCtxToZapFields(ctx)...)
 }
 
 var root *logger
 var moduleLogs sync.Map
 
 func init() {
-	root = &logger{Logger: log15.Root()}
+	config := zap.NewProductionConfig()
+	newLogger, _ := config.Build()
+	root = &logger{Logger: newLogger}
 	root.SetLevelString("debug")
 }
 
@@ -84,19 +108,14 @@ func Module(module string) Logger {
 	return log
 }
 
-func Module15(module string) log15.Logger {
-	return log15.New("module", module)
-}
-
 func newModule(module string) Logger {
-	log := Root().NewLogger("module", module)
+	log := Root().NewLogger(zap.String("module", module))
 	return log
 }
 
 // New returns a new logger with the given context.
-// New is a convenient alias for Root().New
 func New(ctx ...interface{}) Logger {
-	return root.New(ctx...).(*logger)
+	return root.NewLogger(ctx...)
 }
 
 // Root returns the root logger
@@ -134,20 +153,14 @@ func Trace(msg string, ctx ...interface{}) {
 	root.Trace(msg, ctx...)
 }
 
-func StackError(msg string, ctx error) {
-	root.Error(fmt.Sprintf("%s   => error : %+v", msg, ctx))
-}
-func SetHandler(h log15.Handler) {
-	root.SetHandler(h)
+func StackError(msg string, err error) {
+	root.Error(fmt.Sprintf("%s   => error : %+v", msg, err))
 }
 
-func GetHandler() log15.Handler {
-	return root.GetHandler()
-}
-
-func SetLevel(lvl log15.Lvl) Logger {
+func SetLevel(lvl zapcore.Level) Logger {
 	return Root().SetLevel(lvl)
 }
+
 func SetLevelString(lvlString string) Logger {
 	return Root().SetLevelString(lvlString)
 }
@@ -160,4 +173,19 @@ func WithContext(ctx context.Context, l Logger) context.Context {
 	k := loggerCtx{}
 	ctx = context.WithValue(ctx, k, l)
 	return ctx
+}
+
+// Helper function to convert context params (ctx ...interface{}) to zap fields
+func convertCtxToZapFields(ctx []interface{}) []zap.Field {
+	var fields []zap.Field
+	for i := 0; i < len(ctx); i += 2 {
+		if i+1 < len(ctx) {
+			key, okKey := ctx[i].(string)
+			value := ctx[i+1]
+			if okKey {
+				fields = append(fields, zap.Any(key, value))
+			}
+		}
+	}
+	return fields
 }
