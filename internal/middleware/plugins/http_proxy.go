@@ -13,6 +13,7 @@ import (
 	"github.com/failsafe-go/failsafe-go/timeout"
 	cmap "github.com/orcaman/concurrent-map/v2"
 	"github.com/valyala/fasthttp"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 
 	"aggregator/internal/aggregator"
 	"aggregator/internal/client"
@@ -21,6 +22,7 @@ import (
 	"aggregator/internal/middleware"
 	"aggregator/internal/rpc"
 	"aggregator/pkg/alert"
+	"aggregator/pkg/utils"
 )
 
 var DISABLED_NODE_STATUS_CODES = []int{401, 403, 502}
@@ -74,6 +76,14 @@ func (m *HttpProxyMiddleware) OnRequest(session *rpc.Session) error {
 
 func (m *HttpProxyMiddleware) OnProcess(session *rpc.Session) error {
 	if ctx, ok := session.RequestCtx.(*fasthttp.RequestCtx); ok {
+		startTime := time.Now()
+		// create a span for a web request at the /{chain} URL
+		span := tracer.StartSpan("web.request", tracer.ResourceName("/"+session.Chain))
+		defer func() {
+			span.Finish()
+			utils.TimeTrack(startTime, session.NodeName)
+		}()
+
 		log.Debug("relay rpc -> "+session.RpcMethod(), "sid", session.SId(), "node", session.NodeName, "isTx", session.IsWriteRpcMethod, "tries", session.Tries)
 
 		if _, ok := m.disableEndpoints.Get(session.NodeName); ok {
@@ -122,6 +132,9 @@ func (m *HttpProxyMiddleware) OnProcess(session *rpc.Session) error {
 		}
 		ctx.Request.Header.Set("Accept", "application/json")
 		ctx.Request.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36")
+
+		// set tag
+		span.SetTag("node", session.NodeName)
 
 		err := failsafe.Run(func() error {
 			return m.GetClient(session).Do(&ctx.Request, &ctx.Response)

@@ -8,6 +8,7 @@ import (
 	mfasthttp "github.com/ulule/limiter/v3/drivers/middleware/fasthttp"
 	sredis "github.com/ulule/limiter/v3/drivers/store/redis"
 	"github.com/valyala/fasthttp"
+	fasthttptrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/valyala/fasthttp.v1"
 
 	"aggregator/internal/config"
 	"aggregator/internal/env"
@@ -27,7 +28,7 @@ var requestHandler = func(ctx *fasthttp.RequestCtx) {
 		}
 	}()
 
-	// TODO: may need check api key here
+	// TODO: may need check api key if public RPC to users
 
 	var err error
 
@@ -126,7 +127,7 @@ func NewServer() error {
 		handler = RateLimitMiddleware(rateLimiter, handler)
 	}
 	s := &fasthttp.Server{
-		Handler:            handler,
+		Handler:            fasthttptrace.WrapHandler(handler),
 		MaxRequestBodySize: fasthttp.DefaultMaxRequestBodySize * 10,
 	}
 

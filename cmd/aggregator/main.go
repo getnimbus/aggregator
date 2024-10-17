@@ -14,6 +14,7 @@ import (
 	sdk "github.com/hyperdxio/opentelemetry-logs-go/sdk/logs"
 	"github.com/hyperdxio/otel-config-go/otelconfig"
 	"go.uber.org/zap"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 
 	"aggregator/cmd/aggregator/commands"
 	"aggregator/internal/entity"
@@ -21,6 +22,10 @@ import (
 )
 
 func main() {
+	// start the tracer
+	tracer.Start()
+	defer tracer.Stop()
+
 	// load env
 	if err := env.LoadConfig("."); err != nil {
 		panic(fmt.Errorf("cannot load config: %v", err))
