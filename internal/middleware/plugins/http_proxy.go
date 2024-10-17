@@ -109,11 +109,25 @@ func (m *HttpProxyMiddleware) OnProcess(session *rpc.Session) error {
 			m.policiesMap.Set(session.NodeName, policies)
 		}
 
+		// add custom request headers
+		reqUrl := string(ctx.RequestURI())
+		if strings.Contains(reqUrl, "coin98.com") {
+			// bypass coin98 check origin headers
+			ctx.Request.Header.Set("origin", "https://dex.saros.xyz")
+		} else if strings.Contains(reqUrl, "dexlab.space") {
+			// bypass dexlab check origin headers
+			ctx.Request.Header.Set("origin", "https://www.dexlab.space")
+		} else {
+			// TODO: add logic to add custom headers
+		}
+		ctx.Request.Header.Set("Accept", "application/json")
+		ctx.Request.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36")
+
 		err := failsafe.Run(func() error {
 			return m.GetClient(session).Do(&ctx.Request, &ctx.Response)
 		}, policies...)
 
-		// TODO: add response headers
+		// Add response headers
 		//if ctx, ok := session.RequestCtx.(*fasthttp.RequestCtx); ok {
 		//	ctx.Response.Header.Set("Access-Control-Max-Age", "86400")
 		//	ctx.Response.Header.Set("Access-Control-Allow-Origin", "*")
@@ -177,7 +191,13 @@ func (m *HttpProxyMiddleware) OnProcess(session *rpc.Session) error {
 
 		// check response body
 		var response map[string]interface{}
-		if err1 := json.Unmarshal(ctx.Response.Body(), &response); err1 == nil {
+		if strings.Contains(string(ctx.Response.Body()), "error status code 429") {
+			log.Error("error response", "node", session.NodeName, "response", string(ctx.Response.Body()))
+			err = fmt.Errorf("error response %s", string(ctx.Response.Body()))
+			shouldDisableEndpoint = true
+			ctx.SetStatusCode(429)
+			return err
+		} else if err1 := json.Unmarshal(ctx.Response.Body(), &response); err1 == nil {
 			if _, ok := response["error"]; ok {
 				log.Error("error response", "node", session.NodeName, "response", string(ctx.Response.Body()))
 				err = fmt.Errorf("error response %s", string(ctx.Response.Body()))
