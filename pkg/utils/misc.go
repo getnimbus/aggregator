@@ -5,15 +5,15 @@ import (
 	"time"
 )
 
-func TimeTrack(start time.Time, name string) {
+func TimeTrack(start time.Time, name string) string {
 	elapsed := time.Since(start)
 
-	// calculate hours, minutes, and seconds
+	// calculate hours, minutes, seconds, and milliseconds
 	hours := int(elapsed.Hours())
 	minutes := int(elapsed.Minutes()) % 60
 	seconds := int(elapsed.Seconds()) % 60
+	milliseconds := int(elapsed.Milliseconds()) % 1000
 
-	// build the formatted time string
 	var formattedTime string
 	if hours > 0 {
 		formattedTime += fmt.Sprintf("%d hours, ", hours)
@@ -21,7 +21,10 @@ func TimeTrack(start time.Time, name string) {
 	if minutes > 0 {
 		formattedTime += fmt.Sprintf("%d minutes, ", minutes)
 	}
-	formattedTime += fmt.Sprintf("%d seconds", seconds)
+	if seconds > 0 {
+		formattedTime += fmt.Sprintf("%d seconds, ", seconds)
+	}
+	formattedTime += fmt.Sprintf("%d ms", milliseconds)
 
-	fmt.Printf("%s took: %s\n", name, formattedTime)
+	return fmt.Sprintf("%s took: %s", name, formattedTime)
 }

@@ -83,10 +83,10 @@ func (m *HttpProxyMiddleware) OnProcess(session *rpc.Session) error {
 		span := tracer.StartSpan("web.request", tracer.ResourceName("/"+session.Chain))
 		defer func() {
 			span.Finish()
-			utils.TimeTrack(startTime, session.NodeName)
+			log.Info(utils.TimeTrack(startTime, session.NodeName))
 		}()
 
-		log.Debug("relay rpc -> "+session.RpcMethod(), "sid", session.SId(), "node", session.NodeName, "isTx", session.IsWriteRpcMethod, "tries", session.Tries)
+		//log.Debug("relay rpc -> "+session.RpcMethod(), "sid", session.SId(), "node", session.NodeName, "isTx", session.IsWriteRpcMethod, "tries", session.Tries)
 
 		if _, ok := m.disableEndpoints.Get(session.NodeName); ok {
 			log.Debug("disabled endpoint", "node", session.NodeName)
