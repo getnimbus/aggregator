@@ -27,6 +27,8 @@ import (
 
 var DISABLED_NODE_STATUS_CODES = []int{401, 403, 502}
 
+var WHITELIST_CHAINS = []string{"sui", "solana", "solana_das", "solana_das_2"}
+
 type HttpProxyMiddleware struct {
 	nextMiddleware   middleware.Middleware
 	enabled          bool
@@ -187,19 +189,21 @@ func (m *HttpProxyMiddleware) OnProcess(session *rpc.Session) error {
 			return err
 		}
 
-		// check response header
-		contentType := ctx.Response.Header.Peek("Content-Type")
-		if !strings.Contains(string(contentType), "application/json") {
-			log.Error("invalid response content type", contentType, "node", session.NodeName)
-			err = fmt.Errorf("invalid response content type %s", contentType)
-			shouldDisableEndpoint = true
-			now := time.Now().UnixMilli()
-			_, ok := m.disableEndpoints.Get(session.NodeName)
-			if !ok {
-				m.disableEndpoints.Set(session.NodeName, now)
+		if !slices.Contains(WHITELIST_CHAINS, session.Chain) {
+			// check response header
+			contentType := ctx.Response.Header.Peek("Content-Type")
+			if !strings.Contains(string(contentType), "application/json") {
+				log.Error("invalid response content type", contentType, "node", session.NodeName)
+				err = fmt.Errorf("invalid response content type %s", contentType)
+				shouldDisableEndpoint = true
+				now := time.Now().UnixMilli()
+				_, ok := m.disableEndpoints.Get(session.NodeName)
+				if !ok {
+					m.disableEndpoints.Set(session.NodeName, now)
+				}
+				ctx.SetStatusCode(500)
+				return err
 			}
-			ctx.SetStatusCode(500)
-			return err
 		}
 
 		// check response body
