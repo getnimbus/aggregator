@@ -123,12 +123,16 @@ func (m *HttpProxyMiddleware) OnProcess(session *rpc.Session) error {
 
 		// add custom request headers
 		reqUrl := string(ctx.RequestURI())
-		if strings.Contains(reqUrl, "coin98.com") {
-			// bypass coin98 check origin headers
+		if strings.Contains(reqUrl, "coin98.com") { // SOL
 			ctx.Request.Header.Set("origin", "https://dex.saros.xyz")
-		} else if strings.Contains(reqUrl, "dexlab.space") {
-			// bypass dexlab check origin headers
+		} else if strings.Contains(reqUrl, "dexlab.space") { // SOL
 			ctx.Request.Header.Set("origin", "https://www.dexlab.space")
+		} else if strings.Contains(reqUrl, "api.shinami.com/node/v1/sui_mainnet_37685fe6a4ea7736d445816cb59b89e6") { // SUI
+			ctx.Request.Header.Set("origin", "https://www.app.kriya.finance")
+		} else if strings.Contains(reqUrl, "api.shinami.com/node/v1/sui_mainnet_bb70bc6a7d6d04694c4c719f0b6f27aa") { // SUI
+			ctx.Request.Header.Set("origin", "https://app.turbos.finance")
+		} else if strings.Contains(reqUrl, "enterprise.onerpc.com/sui?apikey=cf0b901f-7b0e-460b-a0cf-4c2f784c366d") { // SUI
+			ctx.Request.Header.Set("origin", "https://app.naviprotocol.io")
 		} else {
 			// TODO: add logic to add custom headers
 		}
