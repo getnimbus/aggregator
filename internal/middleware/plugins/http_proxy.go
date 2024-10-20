@@ -142,6 +142,7 @@ func (m *HttpProxyMiddleware) OnProcess(session *rpc.Session) error {
 		// set tag
 		span.SetTag("node", session.NodeName)
 
+		ctx.Request.SetHost(string(ctx.Host()))
 		err := failsafe.Run(func() error {
 			return m.GetClient(session).Do(&ctx.Request, &ctx.Response)
 		}, policies...)

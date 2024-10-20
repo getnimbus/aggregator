@@ -43,6 +43,7 @@ func NewClient(timeout int64, proxy string) *Client {
 }
 
 func (cli *Client) Do(req *fasthttp.Request, resp *fasthttp.Response) error {
-	req.Header.SetConnectionClose() // to set connection: close
+	req.Header.Del("Connection")
+	defer resp.Header.Del("Connection")
 	return cli.client.DoTimeout(req, resp, time.Second*time.Duration(cli.timeout))
 }
