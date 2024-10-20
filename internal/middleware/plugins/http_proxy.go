@@ -10,7 +10,6 @@ import (
 
 	"github.com/failsafe-go/failsafe-go"
 	"github.com/failsafe-go/failsafe-go/circuitbreaker"
-	"github.com/failsafe-go/failsafe-go/timeout"
 	cmap "github.com/orcaman/concurrent-map/v2"
 	"github.com/valyala/fasthttp"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
@@ -111,13 +110,11 @@ func (m *HttpProxyMiddleware) OnProcess(session *rpc.Session) error {
 			policies = make([]failsafe.Policy[any], 0)
 			// circuit breaker opens after 3 failures, half-opens after 1 minute, closes after 2 successes
 			circuitBreaker := circuitbreaker.Builder[any]().
-				WithFailureThreshold(3).
+				WithFailureThreshold(5).
 				WithDelay(time.Minute).
 				WithSuccessThreshold(2).
 				Build()
-			// timeout after 90 seconds
-			timeoutPolicy := timeout.With[any](90 * time.Second)
-			policies = append(policies, timeoutPolicy, circuitBreaker)
+			policies = append(policies, circuitBreaker)
 			m.policiesMap.Set(session.NodeName, policies)
 		}
 

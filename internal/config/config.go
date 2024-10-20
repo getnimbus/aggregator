@@ -22,7 +22,7 @@ var (
 	defaultPhishingDb = "https://cfg.rpchub.io/agg/scam-addresses.json"
 
 	_Config = &Config{
-		RequestTimeout:           90,
+		RequestTimeout:           120,
 		MaxRetries:               3,
 		PhishingDb:               []string{defaultPhishingDb},
 		PhishingDbUpdateInterval: 3600,
