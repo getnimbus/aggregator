@@ -9,7 +9,6 @@ import (
 
 	"github.com/valyala/fasthttp"
 
-	"aggregator/internal/aggregator"
 	"aggregator/internal/client"
 	"aggregator/internal/config"
 	"aggregator/internal/log"
@@ -119,7 +118,8 @@ func (m *SafetyMiddleware) OnRequest(session *rpc.Session) error {
 				}
 				alert.AlertDiscord(ctx, fmt.Sprintf("Option denied - scam address %s %s", m.shortAddress(targetAddress), reporter))
 				logger.Error("Option denied", "target", targetAddress, "Reason", pha.Description, "reporter", pha.Reporter)
-				return aggregator.ErrDenyRequest
+				// no return error, just log and alert
+				//return aggregator.ErrDenyRequest
 			}
 		}
 
