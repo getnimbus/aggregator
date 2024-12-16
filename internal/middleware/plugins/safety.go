@@ -2,7 +2,6 @@ package plugins
 
 import (
 	"encoding/json"
-	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -78,7 +77,7 @@ func (m *SafetyMiddleware) OnRequest(session *rpc.Session) error {
 		rpcMethod := session.RpcMethod()
 		rpcMethod = strings.ToLower(rpcMethod[strings.Index(rpcMethod, "_"):])
 
-		targetAddress := ""
+		//targetAddress := ""
 
 		switch rpcMethod {
 		case strings.ToLower("_sendRawTransaction"):
@@ -86,12 +85,12 @@ func (m *SafetyMiddleware) OnRequest(session *rpc.Session) error {
 			if !ok {
 				return nil
 			}
-			tx, err := utils.DecodeTx(rawTx)
+			_, err := utils.DecodeTx(rawTx)
 			if err != nil {
 				logger.Warn("Unable to decode tx")
 				alert.AlertDiscord(ctx, "Unable to decode tx")
 			} else {
-				targetAddress = tx.To().Hex()
+				//targetAddress = tx.To().Hex()
 				//phishing, pha := m.isPhishingAddress(receiver)
 				//if phishing {
 				//	notify.SendError("Transaction is denied", receiver, pha.Description)
@@ -102,26 +101,26 @@ func (m *SafetyMiddleware) OnRequest(session *rpc.Session) error {
 				//session.Tx = tx
 			}
 		case strings.ToLower("_call"):
-			targetAddress = params.([]interface{})[0].(map[string]interface{})["to"].(string)
+			//targetAddress = params.([]interface{})[0].(map[string]interface{})["to"].(string)
 		case strings.ToLower("_sendTransaction"):
-			targetAddress = params.([]interface{})[0].(map[string]interface{})["to"].(string)
+			//targetAddress = params.([]interface{})[0].(map[string]interface{})["to"].(string)
 		case strings.ToLower("_sendTransactionAsFeePayer"):
 			//targetAddress = params.([]interface{})[0].(map[string]interface{})["to"].(string)
 		}
 
-		if len(targetAddress) != 0 {
-			phishing, pha := m.isPhishingAddress(targetAddress)
-			if phishing {
-				reporter := ""
-				if len(pha.Reporter) > 0 {
-					reporter = "Reporter: " + pha.Reporter
-				}
-				alert.AlertDiscord(ctx, fmt.Sprintf("Option denied - scam address %s %s", m.shortAddress(targetAddress), reporter))
-				logger.Error("Option denied", "target", targetAddress, "Reason", pha.Description, "reporter", pha.Reporter)
-				// no return error, just log and alert
-				//return aggregator.ErrDenyRequest
-			}
-		}
+		//if len(targetAddress) != 0 {
+		//	phishing, pha := m.isPhishingAddress(targetAddress)
+		//	if phishing {
+		//		reporter := ""
+		//		if len(pha.Reporter) > 0 {
+		//			reporter = "Reporter: " + pha.Reporter
+		//		}
+		//		alert.AlertDiscord(ctx, fmt.Sprintf("Option denied - scam address %s %s", m.shortAddress(targetAddress), reporter))
+		//		logger.Error("Option denied", "target", targetAddress, "Reason", pha.Description, "reporter", pha.Reporter)
+		//		// no return error, just log and alert
+		//		//return aggregator.ErrDenyRequest
+		//	}
+		//}
 
 	}
 	return nil
