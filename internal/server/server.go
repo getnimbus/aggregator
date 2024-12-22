@@ -8,7 +8,6 @@ import (
 	mfasthttp "github.com/ulule/limiter/v3/drivers/middleware/fasthttp"
 	sredis "github.com/ulule/limiter/v3/drivers/store/redis"
 	"github.com/valyala/fasthttp"
-	fasthttptrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/valyala/fasthttp.v1"
 
 	"aggregator/internal/config"
 	"aggregator/internal/env"
@@ -127,7 +126,9 @@ func NewServer() error {
 		handler = RateLimitMiddleware(rateLimiter, handler)
 	}
 	s := &fasthttp.Server{
-		Handler:            fasthttptrace.WrapHandler(handler),
+		// wrap handler with datadog trace
+		//Handler:            fasthttptrace.WrapHandler(handler),
+		Handler:            handler,
 		MaxRequestBodySize: fasthttp.DefaultMaxRequestBodySize * 10,
 	}
 

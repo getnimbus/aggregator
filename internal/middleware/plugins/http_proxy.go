@@ -12,7 +12,6 @@ import (
 	"github.com/failsafe-go/failsafe-go/circuitbreaker"
 	cmap "github.com/orcaman/concurrent-map/v2"
 	"github.com/valyala/fasthttp"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 
 	"aggregator/internal/aggregator"
 	"aggregator/internal/client"
@@ -79,9 +78,9 @@ func (m *HttpProxyMiddleware) OnProcess(session *rpc.Session) error {
 	if ctx, ok := session.RequestCtx.(*fasthttp.RequestCtx); ok {
 		startTime := time.Now()
 		// create a span for a web request at the /{chain} URL
-		span := tracer.StartSpan("web.request", tracer.ResourceName("/"+session.Chain))
+		//span := tracer.StartSpan("web.request", tracer.ResourceName("/"+session.Chain))
 		defer func() {
-			span.Finish()
+			//span.Finish()
 			log.Info(utils.TimeTrack(startTime, session.NodeName))
 		}()
 
@@ -137,7 +136,7 @@ func (m *HttpProxyMiddleware) OnProcess(session *rpc.Session) error {
 		ctx.Request.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36")
 
 		// set tag
-		span.SetTag("node", session.NodeName)
+		//span.SetTag("node", session.NodeName)
 
 		ctx.Request.SetHost(string(ctx.Host()))
 		err := failsafe.Run(func() error {
