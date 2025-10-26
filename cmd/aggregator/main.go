@@ -6,11 +6,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/gogf/gf/v2/os/gfile"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
-
 	"aggregator/cmd/aggregator/commands"
 	"aggregator/internal/env"
+	"github.com/gogf/gf/v2/os/gfile"
 )
 
 func main() {
@@ -20,11 +18,11 @@ func main() {
 	}
 
 	// start the tracer
-	tracer.Start(
-		tracer.WithService("rpc-aggregator"),
-		tracer.WithEnv(env.Config.Env),
-	)
-	defer tracer.Stop()
+	//tracer.Start(
+	//	tracer.WithService("rpc-aggregator"),
+	//	tracer.WithEnv(env.Config.Env),
+	//)
+	//defer tracer.Stop()
 
 	// set timezone
 	time.Local = time.UTC
