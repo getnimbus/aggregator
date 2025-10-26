@@ -70,10 +70,10 @@ var requestHandler = func(ctx *fasthttp.RequestCtx) {
 }
 
 func NewRateLimiter() *mfasthttp.Middleware {
-	// define a limit rate to 20 reqs/s
+	// define a limit rate to 10 rps
 	rate := limiter.Rate{
 		Period: 1 * time.Second,
-		Limit:  20,
+		Limit:  10,
 	}
 
 	// create redis client
