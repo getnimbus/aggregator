@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/hyperdxio/opentelemetry-go/otelzap"
+	"github.com/hyperdxio/opentelemetry-logs-go/exporters/otlp/otlplogs"
+	sdk "github.com/hyperdxio/opentelemetry-logs-go/sdk/logs"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -82,11 +85,18 @@ func (l *logger) Trace(msg string, ctx ...interface{}) {
 var root *logger
 var moduleLogs sync.Map
 
+// TODO: refer this for hyperdx
+// https://www.hyperdx.io/docs/install/golang
+// https://last9.io/blog/instrumenting-fasthttp-with-opentelemetry/
 func init() {
-	config := zap.NewProductionConfig()
-	newLogger, _ := config.Build()
+	logExporter, _ := otlplogs.NewExporter(context.Background())
+	loggerProvider := sdk.NewLoggerProvider(
+		sdk.WithBatcher(logExporter),
+	)
+	newLogger := zap.New(otelzap.NewOtelCore(loggerProvider))
+	zap.ReplaceGlobals(newLogger)
 	root = &logger{Logger: newLogger}
-	root.SetLevelString("debug")
+	root.SetLevelString("info")
 }
 
 func Module(module string) Logger {
